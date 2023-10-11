@@ -1,3 +1,8 @@
+import iconLike from '../images/icon-like.png';
+import iconComment from '../images/icon-comment.png';
+import iconDownload from '../images/icon-download.png';
+import iconView from '../images/icon-view.png';
+
 function createCardMarkup(galleryItems) {
   return galleryItems
     .map(
@@ -16,21 +21,26 @@ function createCardMarkup(galleryItems) {
             <div class="photo-card">
             <a href="${largeImageURL}">
             <img src="${webformatURL}" alt="${tags}" loading="lazy" width="${webformatWidth}" height="${webformatHeight}" />
-              </a>
+
             <div class="info">
               <p class="info-item">
-                <b>Likes</b>${likes}
+              <img src="${iconLike}" alt="likes" width="30" height="30">
+               ${likes}
               </p>
               <p class="info-item">
-                <b>Views </b> ${views}
+               <img src="${iconView}" alt="Views" width="30" height="30">
+                ${views}
               </p>
               <p class="info-item">
-                <b>Comments</b> ${comments}
+               <img src="${iconComment}" alt="Comments" width="30" height="30">
+                 ${comments}
               </p>
               <p class="info-item">
-                <b>Downloads</b>${downloads}
+              <img src="${iconDownload}" alt="Downloads" width="30" height="30">
+                ${downloads}
               </p>
             </div>
+             </a>
           </div>
         `;
       }
@@ -38,9 +48,14 @@ function createCardMarkup(galleryItems) {
     .join('');
 }
 
-function clearMarkup(gallery, btn) {
+// function clearMarkup(gallery, btn) {
+//   gallery.innerHTML = '';
+//   btn.classList.replace('load-more', 'is-hidden');
+// }
+
+function clearMarkup(gallery) {
   gallery.innerHTML = '';
-  btn.classList.replace('load-more', 'load-more-hidden');
+  // btn.classList.replace('load-more', 'is-hidden');
 }
 
 export { createCardMarkup, clearMarkup };

@@ -1,14 +1,18 @@
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
-import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
 import { fetchImages } from './js/pixabayApi';
 import { clearMarkup, createCardMarkup } from './js/markupHelpers';
+
+import { scrollBy, scrollUp } from './js/scroll';
+import { createNotify } from './js/notifyHelpers';
 
 const refs = {
   userForm: document.getElementById('search-form'),
   gallery: document.getElementById('gallery'),
   loadMoreBtn: document.querySelector('.js-load-more'),
+  upBtn: document.getElementById('button-up'),
+  fixedWrapper: document.querySelector('.form-wrapper'),
 };
 
 let lightbox = new SimpleLightbox('.gallery a', {
@@ -24,87 +28,83 @@ const perPage = 40;
 
 refs.userForm.addEventListener('submit', onSearch);
 refs.loadMoreBtn.addEventListener('click', onLoadMore);
-
+refs.upBtn.addEventListener('click', scrollUp);
 clearMarkup(refs.gallery, refs.loadMoreBtn);
 
 function onSearch(event) {
   event.preventDefault();
   const query = event.currentTarget.elements.searchQuery.value;
   clearMarkup(refs.gallery, refs.loadMoreBtn);
+  if (query.length === 0 || query === ' ') {
+    createNotify('info');
+    return;
+  }
+
   fetchImages(query, page, perPage)
     .then(images => {
-      console.log(images);
-
       refs.gallery.insertAdjacentHTML(
         'beforeend',
         createCardMarkup(images.hits)
       );
-      images.totalHits && images.totalHits > 0
-        ? Notify.success(`Hooray! We found ${images.totalHits} images.`)
-        : Notify.failure(
-            'Sorry, there are no images matching your search query. Please try again.'
-          );
+      images.totalHits > 0 && images.hits.length > 0
+        ? createNotify('success', images.totalHits)
+        : createNotify('failure-no-matching');
 
-      lightbox.refresh();
-      if (images.totalHits > perPage) {
-        refs.loadMoreBtn.classList.replace('load-more-hidden', 'load-more');
+      if (images.totalHits > perPage && images.hits.length > 0) {
+        refs.loadMoreBtn.classList.replace('is-hidden', 'load-more');
       }
+      lightbox.refresh();
     })
     .catch(error => {
       console.error('Помилка під час запиту:', error);
-      Notify.failure('Oops! Something went wrong! Try reloading the page');
-    })
-    .finally(() => {
-      // refs.loader.classList.add('is-hidden');
+      createNotify('failure-general');
     });
-  // console.log(event.currentTarget.elements.input);
 }
 
-function onLoadMore() {
+function onLoadMore({ target }) {
   page += 1;
+  target.disabled = true;
   const query = refs.userForm.elements.searchQuery.value;
+  const firstChild = refs.gallery.firstElementChild;
+  if (!firstChild) {
+    return;
+  }
+
   fetchImages(query, page, perPage)
     .then(images => {
-      console.log(images);
       refs.gallery.insertAdjacentHTML(
         'beforeend',
         createCardMarkup(images.hits)
       );
-      lightbox.refresh();
-      // window.scrollTo({
-      //   top: document.documentElement.offsetHeight,
-      //   behavior: 'smooth',
-      // });
-      const { height: cardHeight } =
-        refs.gallery.firstElementChild.getBoundingClientRect();
+      const { height: cardHeight } = firstChild.getBoundingClientRect();
 
-      window.scrollBy({
-        top: cardHeight * 2,
-        behavior: 'smooth',
-      });
+      lightbox.refresh();
+      scrollBy(cardHeight);
+
       if (images.totalHits - page * perPage <= 0) {
-        refs.loadMoreBtn.classList.replace('load-more', 'load-more-hidden');
+        refs.loadMoreBtn.classList.replace('load-more', 'is-hidden');
+        createNotify('info-end-results');
       }
     })
     .catch(error => {
       console.error('Помилка під час запиту:', error);
-      Notify.failure('Oops! Something went wrong! Try reloading the page');
+      createNotify('failure-general');
     })
     .finally(() => {
-      // refs.loader.classList.add('is-hidden');
+      target.disabled = false;
     });
 }
 
-// function lightboxInit() {
-//   // if (lightbox) {
-//   //   lightbox.destroy();
-//   // }
-//   lightbox = new SimpleLightbox('.gallery a', {
-//     captionsData: 'alt',
-//     captionDelay: 250,
-//     captionClass: 'gallery__caption',
-//     overlayOpacity: 0.9,
-//     fadeSpeed: 350,
-//   });
-//   lightbox.refresh();
-// }
+function toggleScroll() {
+  const firstScreenHeight = window.innerHeight;
+
+  if (window.scrollY > firstScreenHeight) {
+    refs.fixedWrapper.classList.add('fixed');
+    refs.upBtn.classList.replace('is-hidden', 'button-up');
+  } else {
+    refs.fixedWrapper.classList.remove('fixed');
+    refs.upBtn.classList.replace('button-up', 'is-hidden');
+  }
+}
+
+window.addEventListener('scroll', toggleScroll);
