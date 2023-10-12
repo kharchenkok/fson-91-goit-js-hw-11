@@ -4,8 +4,9 @@ import 'simplelightbox/dist/simple-lightbox.min.css';
 import { fetchImages } from './js/pixabayApi';
 import { clearMarkup, createCardMarkup } from './js/markupHelpers';
 
-import { scrollBy, scrollUp } from './js/scroll';
+import { handleScrollEffects, scrollBy, scrollUp } from './js/scroll';
 import { createNotify } from './js/notifyHelpers';
+import { createLoadMoreObserver } from './js/observers';
 
 const refs = {
   userForm: document.getElementById('search-form'),
@@ -15,6 +16,9 @@ const refs = {
   fixedWrapper: document.querySelector('.form-wrapper'),
 };
 
+let page = 1;
+const perPage = 40;
+
 let lightbox = new SimpleLightbox('.gallery a', {
   captionsData: 'alt',
   captionDelay: 250,
@@ -23,23 +27,24 @@ let lightbox = new SimpleLightbox('.gallery a', {
   fadeSpeed: 350,
 });
 
-let page = 1;
-const perPage = 40;
-
 refs.userForm.addEventListener('submit', onSearch);
 refs.loadMoreBtn.addEventListener('click', onLoadMore);
 refs.upBtn.addEventListener('click', scrollUp);
+window.addEventListener('scroll', () =>
+  handleScrollEffects(refs.fixedWrapper, refs.upBtn)
+);
+
 clearMarkup(refs.gallery, refs.loadMoreBtn);
 
 function onSearch(event) {
   event.preventDefault();
   const query = event.currentTarget.elements.searchQuery.value;
   clearMarkup(refs.gallery, refs.loadMoreBtn);
-  if (query.length === 0 || query === ' ') {
+  if (!query || query === ' ') {
     createNotify('info');
     return;
   }
-
+  page = 1;
   fetchImages(query, page, perPage)
     .then(images => {
       refs.gallery.insertAdjacentHTML(
@@ -83,7 +88,10 @@ function onLoadMore({ target }) {
 
       if (images.totalHits - page * perPage <= 0) {
         refs.loadMoreBtn.classList.replace('load-more', 'is-hidden');
-        createNotify('info-end-results');
+        // createNotify('info-end-results');
+        createLoadMoreObserver(() => {
+          createNotify('info-end-results');
+        }, refs.gallery.lastElementChild);
       }
     })
     .catch(error => {
@@ -95,16 +103,16 @@ function onLoadMore({ target }) {
     });
 }
 
-function toggleScroll() {
-  const firstScreenHeight = window.innerHeight;
-
-  if (window.scrollY > firstScreenHeight) {
-    refs.fixedWrapper.classList.add('fixed');
-    refs.upBtn.classList.replace('is-hidden', 'button-up');
-  } else {
-    refs.fixedWrapper.classList.remove('fixed');
-    refs.upBtn.classList.replace('button-up', 'is-hidden');
-  }
-}
-
-window.addEventListener('scroll', toggleScroll);
+// function toggleScroll() {
+//   const firstScreenHeight = window.innerHeight;
+//
+//   if (window.scrollY > firstScreenHeight) {
+//     refs.fixedWrapper.classList.add('fixed');
+//     refs.upBtn.classList.replace('is-hidden', 'button-up');
+//   } else {
+//     refs.fixedWrapper.classList.remove('fixed');
+//     refs.upBtn.classList.replace('button-up', 'is-hidden');
+//   }
+// }
+//
+// window.addEventListener('scroll', toggleScroll);

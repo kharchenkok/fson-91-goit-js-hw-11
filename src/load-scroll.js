@@ -4,8 +4,9 @@ import 'simplelightbox/dist/simple-lightbox.min.css';
 import { fetchImages } from './js/pixabayApi';
 import { clearMarkup, createCardMarkup } from './js/markupHelpers';
 import { createNotify } from './js/notifyHelpers';
-import { scrollBy, scrollUp } from './js/scroll';
+import { handleScrollEffects, scrollUp } from './js/scroll';
 import { hideLoader, showLoader } from './js/loader';
+import { createLoadMoreObserver } from './js/observers';
 
 const refs = {
   userForm: document.getElementById('search-form'),
@@ -17,7 +18,7 @@ const refs = {
 };
 
 let page = 1;
-const perPage = 100;
+const perPage = 40;
 let searchPerformed = false;
 
 let lightbox = new SimpleLightbox('.gallery a', {
@@ -30,7 +31,9 @@ let lightbox = new SimpleLightbox('.gallery a', {
 
 refs.userForm.addEventListener('submit', onSearch);
 refs.upBtn.addEventListener('click', scrollUp);
-window.addEventListener('scroll', toggleScroll);
+window.addEventListener('scroll', () =>
+  handleScrollEffects(refs.fixedWrapper, refs.upBtn)
+);
 
 clearMarkup(refs.gallery);
 
@@ -38,12 +41,15 @@ function onSearch(event) {
   event.preventDefault();
   const query = event.currentTarget.elements.searchQuery.value;
   clearMarkup(refs.gallery);
-  if (query.length === 0 || query === ' ') {
+  if (!query || query === ' ') {
     createNotify('info');
     return;
   }
 
-  searchPerformed = true;
+  page = 1;
+  searchPerformed = false;
+  refs.loadingIndicator.classList.remove('is-hidden');
+
   showLoader(refs.loader);
 
   fetchImages(query, page, perPage)
@@ -64,6 +70,7 @@ function onSearch(event) {
     })
     .finally(() => {
       hideLoader(refs.loader);
+      searchPerformed = true;
     });
 }
 
@@ -86,7 +93,9 @@ function loadNextPage() {
 
       if (images.totalHits - page * perPage <= 0) {
         refs.loadingIndicator.classList.add('is-hidden');
-        createNotify('info-end-results');
+        createLoadMoreObserver(() => {
+          createNotify('info-end-results');
+        }, refs.gallery.lastElementChild);
       }
     })
     .catch(error => {
@@ -98,21 +107,4 @@ function loadNextPage() {
     });
 }
 
-function toggleScroll() {
-  const firstScreenHeight = window.innerHeight;
-
-  if (window.scrollY > firstScreenHeight) {
-    refs.fixedWrapper.classList.add('fixed');
-    refs.upBtn.classList.replace('is-hidden', 'button-up');
-  } else {
-    refs.fixedWrapper.classList.remove('fixed');
-    refs.upBtn.classList.replace('button-up', 'is-hidden');
-  }
-}
-const observer = new IntersectionObserver(entries => {
-  if (entries[0].isIntersecting) {
-    loadNextPage();
-  }
-});
-
-observer.observe(refs.loadingIndicator);
+createLoadMoreObserver(loadNextPage, refs.loadingIndicator);
