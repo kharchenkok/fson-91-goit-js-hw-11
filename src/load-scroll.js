@@ -9,10 +9,10 @@ import { hideLoader, showLoader } from './js/loader';
 import { createLoadMoreObserver } from './js/observers';
 
 const refs = {
-  userForm: document.getElementById('search-form'),
-  gallery: document.getElementById('gallery'),
-  upBtn: document.getElementById('button-up'),
-  fixedWrapper: document.querySelector('.form-wrapper'),
+  userForm: document.getElementById('search-form-scroll'),
+  gallery: document.getElementById('gallery-scroll'),
+  upBtn: document.getElementById('button-up-scroll'),
+  fixedWrapper: document.querySelector('.js-form-wrapper-scroll'),
   loadingIndicator: document.getElementById('loading-indicator'),
   loader: document.getElementById('loader'),
 };
@@ -39,16 +39,16 @@ clearMarkup(refs.gallery);
 
 function onSearch(event) {
   event.preventDefault();
-  const query = event.currentTarget.elements.searchQuery.value;
   clearMarkup(refs.gallery);
+  const query = event.currentTarget.elements.searchQuery.value.trim();
   if (!query || query === ' ') {
     createNotify('info');
+    refs.loadingIndicator.classList.add('is-hidden');
     return;
   }
 
   page = 1;
   searchPerformed = false;
-  refs.loadingIndicator.classList.remove('is-hidden');
 
   showLoader(refs.loader);
 
@@ -63,6 +63,7 @@ function onSearch(event) {
         : createNotify('failure-no-matching');
 
       lightbox.refresh();
+      refs.loadingIndicator.classList.remove('is-hidden');
     })
     .catch(error => {
       console.error('Помилка під час запиту:', error);
@@ -80,7 +81,7 @@ function loadNextPage() {
   }
   showLoader(refs.loader);
   page += 1;
-  const query = refs.userForm.elements.searchQuery.value;
+  const query = refs.userForm.elements.searchQuery.value.trim();
 
   fetchImages(query, page, perPage)
     .then(images => {

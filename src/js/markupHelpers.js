@@ -48,14 +48,9 @@ function createCardMarkup(galleryItems) {
     .join('');
 }
 
-// function clearMarkup(gallery, btn) {
-//   gallery.innerHTML = '';
-//   btn.classList.replace('load-more', 'is-hidden');
-// }
-
-function clearMarkup(gallery) {
-  gallery.innerHTML = '';
-  // btn.classList.replace('load-more', 'is-hidden');
+function clearMarkup(gallery, btn = null) {
+  gallery.innerHTML = ' ';
+  btn && btn.classList.replace('load-more', 'is-hidden');
 }
 
 export { createCardMarkup, clearMarkup };

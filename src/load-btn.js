@@ -3,9 +3,8 @@ import 'simplelightbox/dist/simple-lightbox.min.css';
 
 import { fetchImages } from './js/pixabayApi';
 import { clearMarkup, createCardMarkup } from './js/markupHelpers';
-
-import { handleScrollEffects, scrollBy, scrollUp } from './js/scroll';
 import { createNotify } from './js/notifyHelpers';
+import { handleScrollEffects, scrollBy, scrollUp } from './js/scroll';
 import { createLoadMoreObserver } from './js/observers';
 
 const refs = {
@@ -38,8 +37,8 @@ clearMarkup(refs.gallery, refs.loadMoreBtn);
 
 function onSearch(event) {
   event.preventDefault();
-  const query = event.currentTarget.elements.searchQuery.value;
   clearMarkup(refs.gallery, refs.loadMoreBtn);
+  const query = event.currentTarget.elements.searchQuery.value.trim();
   if (!query || query === ' ') {
     createNotify('info');
     return;
@@ -69,7 +68,7 @@ function onSearch(event) {
 function onLoadMore({ target }) {
   page += 1;
   target.disabled = true;
-  const query = refs.userForm.elements.searchQuery.value;
+  const query = refs.userForm.elements.searchQuery.value.trim();
   const firstChild = refs.gallery.firstElementChild;
   if (!firstChild) {
     return;
@@ -88,7 +87,6 @@ function onLoadMore({ target }) {
 
       if (images.totalHits - page * perPage <= 0) {
         refs.loadMoreBtn.classList.replace('load-more', 'is-hidden');
-        // createNotify('info-end-results');
         createLoadMoreObserver(() => {
           createNotify('info-end-results');
         }, refs.gallery.lastElementChild);
@@ -102,17 +100,3 @@ function onLoadMore({ target }) {
       target.disabled = false;
     });
 }
-
-// function toggleScroll() {
-//   const firstScreenHeight = window.innerHeight;
-//
-//   if (window.scrollY > firstScreenHeight) {
-//     refs.fixedWrapper.classList.add('fixed');
-//     refs.upBtn.classList.replace('is-hidden', 'button-up');
-//   } else {
-//     refs.fixedWrapper.classList.remove('fixed');
-//     refs.upBtn.classList.replace('button-up', 'is-hidden');
-//   }
-// }
-//
-// window.addEventListener('scroll', toggleScroll);
